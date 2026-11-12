@@ -68,16 +68,9 @@ footer { font-family: var(--mono); font-size: 12px; color: var(--muted); }
 </div>
 
 <script>
-/* Counts one scan per phone. The counter name comes from ?k= in the QR link (set by live.html). */
+/* Counts every scan. The counter name comes from ?k= in the QR link (set by live.html). */
 const COUNTER = { ns: "everpure-cyber-falko", key: (new URLSearchParams(location.search).get("k") || "scans").replace(/[^a-z0-9-]/gi, "").slice(0, 40) || "scans" };
-(function () {
-  let seen = false;
-  try { seen = localStorage.getItem("scanned-" + COUNTER.key) === "1"; } catch (e) {}
-  if (seen) return;
-  fetch("https://abacus.jasoncameron.dev/hit/" + COUNTER.ns + "/" + COUNTER.key, { mode: "cors" })
-    .then(function () { try { localStorage.setItem("scanned-" + COUNTER.key, "1"); } catch (e) {} })
-    .catch(function () {});
-})();
+fetch("https://abacus.jasoncameron.dev/hit/" + COUNTER.ns + "/" + COUNTER.key, { mode: "cors", cache: "no-store" }).catch(function () {});
 </script>
 </body>
 </html>

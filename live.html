@@ -21,12 +21,18 @@ main { height: 100%; display: grid; grid-template-columns: 1fr auto; gap: 6vw; a
 @keyframes bump { from { transform: scale(1.18) } to { transform: scale(1) } }
 .caption { font-size: 3vw; font-weight: 700; max-width: 22ch; line-height: 1.15; }
 .sub { font-size: 1.6vw; color: var(--muted); margin-top: 1.5vh; }
-.qr { background: #fff; padding: 1.6vw; border-radius: 1vw; }
-.qr img, .qr canvas { display: block; width: 26vw !important; height: 26vw !important; }
+.qr { background: #fff; padding: 1.6vw; border-radius: 1vw; align-self: start; }
+.qr img, .qr canvas { display: block; width: min(24vw, 46vh) !important; height: min(24vw, 46vh) !important; }
 .status { position: fixed; bottom: 2vh; left: 6vw; font-family: var(--mono); font-size: 12px; color: var(--muted); }
 .status.err { color: var(--accent); }
-.toast { position: fixed; top: 4vh; right: 6vw; font-family: var(--mono); font-size: 2vw; color: var(--accent); opacity: 0; transition: opacity .4s; }
-.toast.on { opacity: 1; }
+#pops { position: fixed; bottom: 4vh; right: 4vw; display: flex; flex-direction: column; align-items: flex-end; gap: 1.2vh; pointer-events: none; z-index: 5; }
+.pop { display: flex; align-items: center; gap: .6em; background: var(--surface); color: var(--ink); border-radius: 16px; padding: .5em 1em;
+  font-size: clamp(18px, 2.2vw, 40px); font-weight: 700; box-shadow: 0 8px 28px rgba(0,0,0,.4); animation: popin .5s cubic-bezier(.2,1.5,.4,1) both; }
+.pop .plus { background: var(--accent); color: var(--bg); border-radius: 99px; padding: .05em .5em; }
+.pop .sub { font-family: var(--mono); font-size: .55em; color: var(--accent); font-weight: 400; }
+.pop.out { animation: popout .5s ease both; }
+@keyframes popin { from { opacity: 0; transform: translateX(60px) scale(.85) } to { opacity: 1; transform: none } }
+@keyframes popout { to { opacity: 0; transform: translateY(-10px) } }
 @media (max-width: 800px) { main { grid-template-columns: 1fr; } .qr img, .qr canvas { width: 60vw !important; height: 60vw !important; } }
 body.raffle main { grid-template-columns: 1fr; padding: 7vh 8vw; align-content: center; gap: 2vh; }
 body.raffle .qr, body.raffle .status { display: none; }
@@ -34,8 +40,8 @@ body.raffle .label { font-size: 4vw; }
 body.raffle .count { font-size: 48vw; }
 body.raffle .caption { font-size: 7vw; }
 body.raffle .sub { font-size: 4.2vw; }
-body.raffle .toast { font-size: 5vw; top: 5vh; right: 8vw; }
-@media (prefers-reduced-motion: reduce) { .count.bump { animation: none } }
+body.raffle .pop { font-size: 4.5vw; }
+@media (prefers-reduced-motion: reduce) { .count.bump, .pop, .pop.out { animation: none } }
 </style>
 </head>
 <body>
@@ -48,7 +54,7 @@ body.raffle .toast { font-size: 5vw; top: 5vh; right: 8vw; }
   </section>
   <div class="qr" id="qr" aria-label="QR code to the giveaway page"></div>
 </main>
-<div class="toast" id="toast">+1 victim</div>
+<div id="pops"></div>
 <div class="status" id="status">Connecting…</div>
 <script>
 const NS = "everpure-cyber-falko";
@@ -71,17 +77,31 @@ try {
   q.style.cssText = "color:#2D2A27;font:16px monospace;max-width:26vw;word-break:break-all";
 }
 
-const el = document.getElementById("count"), st = document.getElementById("status"), toast = document.getElementById("toast");
-let last = null, toastTimer;
+const el = document.getElementById("count"), st = document.getElementById("status"), pops = document.getElementById("pops");
+const QUIPS = RAFFLE
+  ? ["is feeling lucky", "wants that espresso machine", "entered the draw", "is one step closer to free coffee", "just joined the raffle"]
+  : ["trusted a random QR code", "wanted that espresso machine", "clicked first, thought later", "is now a statistic", "just got quished"];
+function pop(n) {
+  const d = document.createElement("div"); d.className = "pop";
+  d.innerHTML = '<span class="plus">+1</span><span class="what"></span><span class="sub"></span>';
+  d.querySelector(".what").textContent = NOUN[0].replace("new ", "");
+  d.querySelector(".sub").textContent = "#" + n + " " + QUIPS[n % QUIPS.length];
+  pops.append(d);
+  while (pops.children.length > (RAFFLE ? 5 : 3)) pops.firstChild.remove();
+  setTimeout(() => { d.classList.add("out"); setTimeout(() => d.remove(), 500); }, 7000);
+}
+let last = null, base = null;
+const ALLTIME = new URLSearchParams(location.search).get("total") === "all";
 async function poll() {
   try {
     const r = await fetch("https://abacus.jasoncameron.dev/get/" + NS + "/" + KEY, { cache: "no-store" });
-    const v = r.status === 404 ? 0 : (await r.json()).value;
+    const raw = r.status === 404 ? 0 : (await r.json()).value;
+    if (base === null) base = ALLTIME ? 0 : raw;
+    const v = raw - base;
     if (typeof v === "number" && v !== last) {
       if (last !== null && v > last) {
         el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump");
-        toast.textContent = "+" + (v - last) + " " + (v - last === 1 ? NOUN[0] : NOUN[1]);
-        toast.classList.add("on"); clearTimeout(toastTimer); toastTimer = setTimeout(() => toast.classList.remove("on"), 1500);
+        const k = Math.min(v - last, 10); for (let i = k - 1; i >= 0; i--) setTimeout(() => pop(v - i), (k - 1 - i) * 350);
       }
       el.textContent = v; last = v;
     }
@@ -90,7 +110,7 @@ async function poll() {
     st.className = "status err"; st.textContent = "Counter not reachable. Check the venue Wi-Fi.";
   }
 }
-poll(); setInterval(poll, 2000);
+poll(); setInterval(poll, 1500);
 </script>
 </body>
 </html>
