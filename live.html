@@ -95,8 +95,13 @@ const ALLTIME = new URLSearchParams(location.search).get("total") === "all";
 async function poll() {
   try {
     const r = await fetch("https://abacus.jasoncameron.dev/get/" + NS + "/" + KEY, { cache: "no-store" });
-    const raw = r.status === 404 ? 0 : (await r.json()).value;
-    if (base === null) base = ALLTIME ? 0 : raw;
+    let raw = 0;
+    if (r.status !== 404) {
+      if (!r.ok) throw new Error("http " + r.status);
+      raw = Number((await r.json()).value);
+    }
+    if (!Number.isFinite(raw)) throw new Error("bad value");
+    if (base === null || !Number.isFinite(base)) base = ALLTIME ? 0 : raw;
     const v = raw - base;
     if (typeof v === "number" && v !== last) {
       if (last !== null && v > last) {
@@ -107,7 +112,7 @@ async function poll() {
     }
     st.className = "status"; st.textContent = "Live · counter “" + KEY + "” · " + target.href;
   } catch (e) {
-    st.className = "status err"; st.textContent = "Counter not reachable. Check the venue Wi-Fi.";
+    st.className = "status err"; st.textContent = "Counter busy or not reachable, retrying… (" + e.message + ")";
   }
 }
 poll(); setInterval(poll, 1500);
