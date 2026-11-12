@@ -7,7 +7,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;600;700&family=Space+Mono:wght@400;700&display=swap">
 <style>
-*{box-sizing:border-box} html,body{margin:0}
+*{box-sizing:border-box} html,body{margin:0;overflow-x:hidden}
 /* Layout: single phone-first column, one loud stamp, then calm advice. Deliberately single dark theme. */
 :root {
   --bg: #2D2A27; --surface: #3B3733; --ink: #FFF5E3; --muted: #B3AA9C;
@@ -22,7 +22,7 @@ body { background: var(--bg); color: var(--ink); font-family: var(--display); fo
   display: flex; flex-direction: column; gap: 28px; }
 .prize { font-family: var(--mono); font-size: 13px; color: var(--muted); letter-spacing: .08em; text-transform: uppercase; }
 .prize s { text-decoration-color: var(--accent); text-decoration-thickness: 2px; }
-.stamp { font-size: clamp(64px, 20vw, 112px); font-weight: 700; line-height: .95; color: var(--accent); letter-spacing: -.02em;
+.stamp { font-size: clamp(90px, 24vw, 190px); font-weight: 700; line-height: .9; white-space: nowrap; color: var(--accent); letter-spacing: -.02em;
   transform: rotate(-4deg); transform-origin: left center; animation: slam .55s cubic-bezier(.2,1.6,.4,1) both; }
 @keyframes slam { from { transform: rotate(-4deg) scale(2.2); opacity: .2 } to { transform: rotate(-4deg) scale(1); opacity: 1 } }
 @media (prefers-reduced-motion: reduce) { .stamp { animation: none } }
@@ -33,9 +33,6 @@ p { margin: 0; }
 .label { font-family: var(--mono); font-size: 12px; letter-spacing: .1em; text-transform: uppercase; color: var(--accent); }
 ul { margin: 0; padding-left: 20px; display: flex; flex-direction: column; gap: 8px; }
 li::marker { color: var(--accent); }
-.hand { background: var(--accent); color: var(--bg); border-radius: 14px; padding: 22px 20px; display: flex; flex-direction: column; gap: 8px; }
-.hand h2 { margin: 0; font-size: 24px; line-height: 1.2; }
-.hand .big { font-size: 56px; line-height: 1; }
 .term { font-family: var(--mono); font-size: 14px; color: var(--good); }
 footer { font-family: var(--mono); font-size: 12px; color: var(--muted); }
 </style>
@@ -45,7 +42,7 @@ footer { font-family: var(--mono); font-size: 12px; color: var(--muted); }
 <div class="wrap">
   <div class="prize"><s>Win a free espresso machine. 3 left!</s></div>
   <div class="stamp">Gotcha.</div>
-  <h1>You just scanned a QR code from a stranger. At a cyber security talk.</h1>
+  <h1>You just scanned a QR code from a stranger. At a cyber resilience talk.</h1>
   <p class="muted">Relax, nothing happened. This page collects nothing and tracks nothing. There is also no espresso machine. Sorry about that.</p>
 
   <div class="card">
@@ -65,12 +62,6 @@ footer { font-family: var(--mono); font-size: 12px; color: var(--muted); }
       <li>Never sign in to anything right after scanning a code.</li>
       <li>When in doubt, type the address yourself.</li>
     </ul>
-  </div>
-
-  <div class="hand">
-    <div class="big" aria-hidden="true">✋</div>
-    <h2>Now the hard part.</h2>
-    <p>The speaker is about to ask who scanned the code. Raise your hand. Be brave. Half the room is about to do the same.</p>
   </div>
 
   <footer>Everpure · Cyber Resilience session</footer>
