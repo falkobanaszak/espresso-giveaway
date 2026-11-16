@@ -106,14 +106,17 @@ function show(raw) {
   }
   st.className = "status"; st.textContent = "Live · " + target.href;
 }
-// Firebase pushes every change instantly over one open connection.
-const es = new EventSource(DB + "/scans.json");
-const onMsg = e => { try { const m = JSON.parse(e.data); if (m && m.path === "/") show(m.data); } catch (err) {} };
-es.addEventListener("put", onMsg);
-es.addEventListener("patch", onMsg);
-es.onerror = () => { st.className = "status err"; st.textContent = "Reconnecting to the counter…"; };
-// Safety net: a plain read every 15 s in case the live connection is blocked.
-setInterval(() => fetch(DB + "/scans.json", { cache: "no-store" }).then(r => r.ok ? r.json() : null).then(v => { if (v !== null) show(v); }).catch(() => {}), 15000);
+// Ask Firebase for the count every 1.5 s. "null" just means no scans yet.
+async function poll() {
+  try {
+    const r = await fetch(DB + "/scans.json", { cache: "no-store" });
+    if (!r.ok) throw new Error("http " + r.status);
+    show(await r.json());
+  } catch (e) {
+    st.className = "status err"; st.textContent = "Counter not reachable, retrying… (" + e.message + ")";
+  }
+}
+poll(); setInterval(poll, 1500);
 </script>
 </body>
 </html>
