@@ -68,9 +68,8 @@ footer { font-family: var(--mono); font-size: 12px; color: var(--muted); }
 </div>
 
 <script>
-/* Counts every scan. The counter name comes from ?k= in the QR link (set by live.html). */
-const COUNTER = { ns: "everpure-cyber-falko", key: (new URLSearchParams(location.search).get("k") || "scans").replace(/[^a-z0-9-]/gi, "").slice(0, 40) || "scans" };
-fetch("https://abacus.jasoncameron.dev/hit/" + COUNTER.ns + "/" + COUNTER.key, { mode: "cors", cache: "no-store" }).catch(function () {});
+/* Counts every scan: adds exactly 1 to the counter in Firebase (atomic on the server). */
+fetch("https://espresso-giveaway-default-rtdb.europe-west1.firebasedatabase.app/scans.json", { method: "PUT", body: JSON.stringify({ ".sv": { "increment": 1 } }) }).catch(function () {});
 </script>
 </body>
 </html>

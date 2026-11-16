@@ -57,7 +57,6 @@ body.raffle .pop { font-size: 4.5vw; }
 <div id="pops"></div>
 <div class="status" id="status">Connecting…</div>
 <script>
-const NS = "everpure-cyber-falko";
 const KEY = (new URLSearchParams(location.search).get("key") || "scans").replace(/[^a-z0-9-]/gi, "").slice(0, 40) || "scans";
 const RAFFLE = new URLSearchParams(location.search).get("mode") === "raffle";
 let NOUN = ["victim", "victims"];
@@ -68,7 +67,7 @@ if (RAFFLE) {
   document.getElementById("sub").textContent = "Only 3 espresso machines left. Scan the code to join them.";
   NOUN = ["new entry", "new entries"];
 }
-const target = new URL("index.html", location.href); target.search = "?k=" + KEY;
+const target = new URL("index.html", location.href); 
 try {
   new QRCode(document.getElementById("qr"), { text: target.href, width: 512, height: 512, colorDark: "#2D2A27", colorLight: "#ffffff", correctLevel: QRCode.CorrectLevel.M });
 } catch (e) {
@@ -92,30 +91,29 @@ function pop(n) {
 }
 let last = null, base = null;
 const ALLTIME = new URLSearchParams(location.search).get("total") === "all";
-async function poll() {
-  try {
-    const r = await fetch("https://abacus.jasoncameron.dev/get/" + NS + "/" + KEY, { cache: "no-store" });
-    let raw = 0;
-    if (r.status !== 404) {
-      if (!r.ok) throw new Error("http " + r.status);
-      raw = Number((await r.json()).value);
+const DB = "https://espresso-giveaway-default-rtdb.europe-west1.firebasedatabase.app";
+function show(raw) {
+  raw = Number(raw || 0);
+  if (!Number.isFinite(raw)) return;
+  if (base === null) base = ALLTIME ? 0 : raw;
+  const v = raw - base;
+  if (v !== last) {
+    if (last !== null && v > last) {
+      el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump");
+      const k = Math.min(v - last, 10); for (let i = k - 1; i >= 0; i--) setTimeout(() => pop(v - i), (k - 1 - i) * 350);
     }
-    if (!Number.isFinite(raw)) throw new Error("bad value");
-    if (base === null || !Number.isFinite(base)) base = ALLTIME ? 0 : raw;
-    const v = raw - base;
-    if (typeof v === "number" && v !== last) {
-      if (last !== null && v > last) {
-        el.classList.remove("bump"); void el.offsetWidth; el.classList.add("bump");
-        const k = Math.min(v - last, 10); for (let i = k - 1; i >= 0; i--) setTimeout(() => pop(v - i), (k - 1 - i) * 350);
-      }
-      el.textContent = v; last = v;
-    }
-    st.className = "status"; st.textContent = "Live · counter “" + KEY + "” · " + target.href;
-  } catch (e) {
-    st.className = "status err"; st.textContent = "Counter busy or not reachable, retrying… (" + e.message + ")";
+    el.textContent = v; last = v;
   }
+  st.className = "status"; st.textContent = "Live · " + target.href;
 }
-poll(); setInterval(poll, 1500);
+// Firebase pushes every change instantly over one open connection.
+const es = new EventSource(DB + "/scans.json");
+const onMsg = e => { try { const m = JSON.parse(e.data); if (m && m.path === "/") show(m.data); } catch (err) {} };
+es.addEventListener("put", onMsg);
+es.addEventListener("patch", onMsg);
+es.onerror = () => { st.className = "status err"; st.textContent = "Reconnecting to the counter…"; };
+// Safety net: a plain read every 15 s in case the live connection is blocked.
+setInterval(() => fetch(DB + "/scans.json", { cache: "no-store" }).then(r => r.ok ? r.json() : null).then(v => { if (v !== null) show(v); }).catch(() => {}), 15000);
 </script>
 </body>
 </html>
